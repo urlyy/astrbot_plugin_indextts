@@ -1,15 +1,13 @@
 import os
-import json
 import asyncio
 import uuid
 import shutil
-import time
 from pathlib import Path
 
 import httpx
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
-from astrbot.api import logger
+from astrbot.api import AstrBotConfig, logger
 import astrbot.api.message_components as Comp
 from astrbot.api.message_components import Plain
 from gradio_client import Client, handle_file
@@ -22,64 +20,23 @@ from gradio_client import Client, handle_file
     "1.0.0"
 )
 class IndexTTSPlugin(Star):
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
 
         # 数据目录
-        plugin_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-        self.data_dir = plugin_dir / "data"
+        self.plugin_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+        self.data_dir = self.plugin_dir / "data"
         self.voice_dir = self.data_dir / "voices"
         self.output_dir = self.data_dir / "generated"
         self.voice_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        # 加载配置
-        self.config_path = self.data_dir / "config.json"
-        self.config = self._load_config()
+        # 配置由 AstrBot 根据 _conf_schema.json 创建并从 Desktop/WebUI 注入。
+        self.config = config
 
         # Gradio 客户端
         self.client = None
         self._init_client()
-
-    # ─── 配置管理 ───────────────────────────────────────────
-
-    def _load_config(self) -> dict:
-        default = {
-            "index_tts_url": "http://127.0.0.1:7860/",
-            "default_reference_audio": "",
-            "auto_capture_voice": False,
-            "auto_tts_enabled": True,
-            "max_auto_tts_length": 500,
-            "infer_mode": "批次推理",
-            "max_text_tokens_per_sentence": 120,
-            "sentences_bucket_max_size": 4,
-            "do_sample": True,
-            "top_p": 0.8,
-            "top_k": 30,
-            "temperature": 1.0,
-            "length_penalty": 0.0,
-            "num_beams": 3,
-            "repetition_penalty": 10.0,
-            "max_mel_tokens": 600,
-        }
-        if self.config_path.exists():
-            try:
-                saved = json.loads(self.config_path.read_text(encoding="utf-8"))
-                for k, v in default.items():
-                    saved.setdefault(k, v)
-                return saved
-            except Exception:
-                logger.warning("配置文件损坏，使用默认配置")
-        self._save_config(default)
-        return default
-
-    def _save_config(self, config: dict | None = None):
-        if config is None:
-            config = self.config
-        self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        self.config_path.write_text(
-            json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
 
     # ─── IndexTTS 客户端 ────────────────────────────────────
 
@@ -183,9 +140,13 @@ class IndexTTSPlugin(Star):
         user_voice = self._get_user_voice_path(user_id)
         if os.path.exists(user_voice):
             return user_voice
-        default = self.config.get("default_reference_audio", "")
-        if default and os.path.exists(default):
-            return default
+        configured = self.config.get("default_reference_audio", "")
+        if configured:
+            default = Path(configured).expanduser()
+            if not default.is_absolute():
+                default = self.plugin_dir / default
+            if default.exists():
+                return str(default)
         bundled = str(self.data_dir / "voice.wav")
         if os.path.exists(bundled):
             return bundled
@@ -371,7 +332,7 @@ class IndexTTSPlugin(Star):
 
         lines = [
             "📋 IndexTTS 当前配置:",
-            f"  服务地址: {self.config['index_tts_url']}",
+            f"  服务地址: {self.config.get('index_tts_url', 'http://127.0.0.1:7860/')}",
             f"  服务状态: {'✅ 已连接' if self.client else '❌ 未连接'}",
             f"  自动 TTS: {'✅ 已开启' if self.config.get('auto_tts_enabled', True) else '❌ 已关闭'}",
             f"  个人音色: {'✅ 已设置' if has_user_voice else '❌ 未设置（使用默认）'}",
@@ -482,11 +443,11 @@ class IndexTTSPlugin(Star):
 
         if msg.lower() in ("on", "开", "启用", "开启", "1", "true"):
             self.config["auto_tts_enabled"] = True
-            self._save_config()
+            self.config.save_config()
             yield event.plain_result("✅ 自动 TTS 已开启\nLLM 回复将自动转换为语音消息")
         elif msg.lower() in ("off", "关", "禁用", "关闭", "0", "false"):
             self.config["auto_tts_enabled"] = False
-            self._save_config()
+            self.config.save_config()
             yield event.plain_result("🔇 自动 TTS 已关闭\n使用 /tts <文本> 仍可手动生成语音")
         else:
             status = "✅ 已开启" if current else "❌ 已关闭"

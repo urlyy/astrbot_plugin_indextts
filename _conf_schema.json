@@ -1,0 +1,92 @@
+{
+  "index_tts_url": {
+    "type": "string",
+    "description": "IndexTTS 服务地址",
+    "hint": "IndexTTS Gradio WebUI 的访问地址。AstrBot 在 Docker 中、IndexTTS 在宿主机时，通常使用 http://host.docker.internal:7860/。",
+    "obvious_hint": true,
+    "default": "http://host.docker.internal:7860/"
+  },
+  "default_reference_audio": {
+    "type": "string",
+    "description": "默认参考音频路径",
+    "hint": "可填写绝对路径，或相对于插件根目录的路径，例如 data/voice.wav。留空时会自动使用插件内置的 data/voice.wav。",
+    "default": "data/voice.wav"
+  },
+  "auto_capture_voice": {
+    "type": "bool",
+    "description": "自动捕获用户语音作为个人音色",
+    "hint": "启用后，用户发送的语音消息会覆盖其个人参考音频。",
+    "default": false
+  },
+  "auto_tts_enabled": {
+    "type": "bool",
+    "description": "自动将 LLM 回复转换为语音",
+    "hint": "关闭后仍可使用 /tts 命令手动生成语音。",
+    "default": true
+  },
+  "max_auto_tts_length": {
+    "type": "int",
+    "description": "自动语音最大文本长度",
+    "hint": "超过此字符数的 LLM 回复不会自动生成语音。",
+    "default": 500
+  },
+  "infer_mode": {
+    "type": "string",
+    "description": "推理模式",
+    "hint": "该值会原样传给 IndexTTS 的 infer_mode 参数，请与所用 IndexTTS WebUI 中显示的模式名称保持一致。",
+    "default": "批次推理"
+  },
+  "max_text_tokens_per_sentence": {
+    "type": "int",
+    "description": "单句最大文本 Token 数",
+    "default": 120
+  },
+  "sentences_bucket_max_size": {
+    "type": "int",
+    "description": "句子分桶最大数量",
+    "default": 4
+  },
+  "do_sample": {
+    "type": "bool",
+    "description": "启用采样",
+    "default": true
+  },
+  "top_p": {
+    "type": "float",
+    "description": "Top P",
+    "hint": "控制核采样范围。",
+    "default": 0.8
+  },
+  "top_k": {
+    "type": "int",
+    "description": "Top K",
+    "hint": "控制采样时保留的候选数量。",
+    "default": 30
+  },
+  "temperature": {
+    "type": "float",
+    "description": "Temperature",
+    "hint": "数值越高，生成结果通常越随机。",
+    "default": 1.0
+  },
+  "length_penalty": {
+    "type": "float",
+    "description": "长度惩罚",
+    "default": 0.0
+  },
+  "num_beams": {
+    "type": "int",
+    "description": "Beam Search 数量",
+    "default": 3
+  },
+  "repetition_penalty": {
+    "type": "float",
+    "description": "重复惩罚",
+    "default": 10.0
+  },
+  "max_mel_tokens": {
+    "type": "int",
+    "description": "最大 Mel Token 数",
+    "default": 600
+  }
+}

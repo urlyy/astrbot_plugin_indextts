@@ -16,10 +16,11 @@
 ```
 astrbot_plugin_indextts/
 ├── metadata.yaml         # 插件元数据
+├── _conf_schema.json     # AstrBot Desktop/WebUI 可视化配置
 ├── requirements.txt      # 依赖: gradio_client, httpx
 ├── main.py               # 插件核心代码
 └── data/                 # 运行时自动创建
-    ├── config.json       # 配置文件
+    ├── voice.wav         # 插件内置默认参考音频
     ├── voices/           # 用户个人参考音频
     └── generated/        # 生成的 TTS 音频
 ```
@@ -43,22 +44,13 @@ cp -r astrbot_plugin_indextts /path/to/AstrBot/data/plugins/
 
 ## 配置说明
 
-首次启动后，编辑自动生成的 `data/config.json`：
-
-```json
-{
-    "index_tts_url": "http://host.docker.internal:7860/",
-    "default_reference_audio": "D:/IndexTTS/index-tts/prompts/your_voice.wav",
-    "auto_capture_voice": false,
-    "infer_mode": "批次推理"
-}
-```
+在 AstrBot Desktop/WebUI 中打开 **插件管理 → IndexTTS 语音合成 → 配置**，即可直接修改并保存全部配置，无需编辑插件目录中的文件。保存后如未自动重载，请在插件管理中重载一次插件。
 
 ### 关键配置项
 
 | 配置项 | 说明 |
 |---|---|
-| `default_reference_audio` | 默认音色克隆参考音频路径（**必填**，否则用户需各自用 `/tts_voice` 设置） |
+| `default_reference_audio` | 默认音色克隆参考音频路径；可填写绝对路径或插件根目录下的相对路径，留空时使用内置 `data/voice.wav` |
 | `auto_capture_voice` | 设为 `true` 后，用户发送的语音消息会自动保存为该用户的参考音色 |
 | `index_tts_url` | IndexTTS Gradio 服务地址 |
 
@@ -67,7 +59,7 @@ cp -r astrbot_plugin_indextts /path/to/AstrBot/data/plugins/
 ## 使用流程
 
 1. 启动 IndexTTS（运行 `启动程序.bat`）
-2. 配置默认参考音频，或让用户通过 `/tts_voice <URL>` 设置自己的音色
+2. 在 AstrBot Desktop/WebUI 的插件配置页设置参数，或让用户通过 `/tts_voice <URL>` 设置自己的音色
 3. 发送 `/tts 你好世界` 即可生成克隆语音
 
 ## 技术要点
