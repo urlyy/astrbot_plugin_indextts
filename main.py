@@ -344,33 +344,6 @@ class IndexTTSPlugin(Star):
         ]
         yield event.plain_result("\n".join(lines))
 
-    # ─── 自动捕获语音消息（可选） ────────────────────────────
-
-    @filter.event_message_type(filter.EventMessageType.ALL)
-    async def on_voice_message(self, event: AstrMessageEvent):
-        """当用户发送语音消息时，自动保存为参考音频（需启用 auto_capture_voice）"""
-        if not self.config.get("auto_capture_voice", False):
-            return
-
-        try:
-            message_chain = event.message_obj.message
-        except Exception:
-            return
-
-        user_id = event.get_sender_id()
-
-        for comp in message_chain:
-            if isinstance(comp, Comp.Record):
-                url = getattr(comp, "url", None) or getattr(comp, "file", None)
-                if url:
-                    voice_path = self._get_user_voice_path(user_id)
-                    success = await self._download_audio(str(url), voice_path)
-                    if success:
-                        yield event.plain_result("🎙️ 已自动捕获语音作为你的参考音色")
-                    else:
-                        logger.warning(f"自动捕获语音失败: user={user_id}")
-                break
-
     # ─── 清理 ───────────────────────────────────────────────
 
     def _cleanup_old_outputs(self, keep: int = 50):

@@ -51,7 +51,6 @@ cp -r astrbot_plugin_indextts /path/to/AstrBot/data/plugins/
 | 配置项 | 说明 |
 |---|---|
 | `default_reference_audio` | 默认音色克隆参考音频路径；可填写绝对路径或插件根目录下的相对路径，留空时使用内置 `data/voice.wav` |
-| `auto_capture_voice` | 设为 `true` 后，用户发送的语音消息会自动保存为该用户的参考音色 |
 | `index_tts_url` | IndexTTS Gradio 服务地址 |
 
 > **关于地址配置**：如果 AstrBot 在 Docker 中运行而 IndexTTS 在宿主机上，使用 `http://host.docker.internal:7860/`；如果两者在同一网络环境中，改为 `http://127.0.0.1:7860/`。

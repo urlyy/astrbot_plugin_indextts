@@ -12,12 +12,6 @@
     "hint": "可填写绝对路径，或相对于插件根目录的路径，例如 data/voice.wav。留空时会自动使用插件内置的 data/voice.wav。",
     "default": "data/voice.wav"
   },
-  "auto_capture_voice": {
-    "type": "bool",
-    "description": "自动捕获用户语音作为个人音色",
-    "hint": "启用后，用户发送的语音消息会覆盖其个人参考音频。",
-    "default": false
-  },
   "auto_tts_enabled": {
     "type": "bool",
     "description": "自动将 LLM 回复转换为语音",
