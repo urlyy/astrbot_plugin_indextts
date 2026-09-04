@@ -16,7 +16,7 @@ from gradio_client import Client, handle_file
 @register(
     "astrbot_plugin_indextts",
     "Moonlit Sapling.",
-    "基于本地 IndexTTS 的文本转语音插件，支持音色克隆",
+    "适配 IndexTTS 2.0 的文本转语音插件，支持音色克隆（不兼容 IndexTTS 2.5）",
     "1.0.0"
 )
 class IndexTTSPlugin(Star):
@@ -174,21 +174,28 @@ class IndexTTSPlugin(Star):
 
         cfg = self.config
 
+        # IndexTTS2 的 Gradio API 共有 24 个输入；使用位置参数可避免
+        # Gradio 将 *args 暴露为 param_16～param_23 所带来的脆弱耦合。
+        reference_file = handle_file(reference_audio)
         result = await asyncio.to_thread(
             client.predict,
-            prompt=handle_file(reference_audio),
-            text=text,
-            infer_mode=cfg.get("infer_mode", "批次推理"),
-            max_text_tokens_per_sentence=cfg.get("max_text_tokens_per_sentence", 120),
-            sentences_bucket_max_size=cfg.get("sentences_bucket_max_size", 4),
-            param_5=cfg.get("do_sample", True),
-            param_6=cfg.get("top_p", 0.8),
-            param_7=cfg.get("top_k", 30),
-            param_8=cfg.get("temperature", 1.0),
-            param_9=cfg.get("length_penalty", 0.0),
-            param_10=cfg.get("num_beams", 3),
-            param_11=cfg.get("repetition_penalty", 10.0),
-            param_12=cfg.get("max_mel_tokens", 600),
+            "与音色参考音频相同",
+            reference_file,
+            text,
+            reference_file,
+            0.65,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            "",
+            False,
+            cfg.get("max_text_tokens_per_segment", 120),
+            cfg.get("do_sample", True),
+            cfg.get("top_p", 0.8),
+            cfg.get("top_k", 30),
+            cfg.get("temperature", 0.8),
+            cfg.get("length_penalty", 0.0),
+            cfg.get("num_beams", 3),
+            cfg.get("repetition_penalty", 10.0),
+            cfg.get("max_mel_tokens", 1500),
             api_name="/gen_single",
         )
 
@@ -337,8 +344,8 @@ class IndexTTSPlugin(Star):
             f"  自动 TTS: {'✅ 已开启' if self.config.get('auto_tts_enabled', True) else '❌ 已关闭'}",
             f"  个人音色: {'✅ 已设置' if has_user_voice else '❌ 未设置（使用默认）'}",
             f"  参考音频: {ref or '(无)'}",
-            f"  推理模式: {self.config.get('infer_mode', 'N/A')}",
-            f"  temperature: {self.config.get('temperature', 1.0)}",
+            f"  单段最大 Token: {self.config.get('max_text_tokens_per_segment', 120)}",
+            f"  temperature: {self.config.get('temperature', 0.8)}",
             f"  top_p: {self.config.get('top_p', 0.8)}",
             f"  top_k: {self.config.get('top_k', 30)}",
         ]

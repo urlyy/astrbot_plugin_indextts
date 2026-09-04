@@ -1,6 +1,9 @@
-# AstrBot IndexTTS 插件
+# AstrBot IndexTTS 2.0 插件
 
-> 基于本地 [IndexTTS](https://www.xcnahida.cn/?p=ey8AUxey) 的文本转语音插件，支持**音色克隆**与 **LLM 回复自动转语音**。
+> 专门适配 **IndexTTS 2.0 API** 的文本转语音插件，支持**音色克隆**与 **LLM 回复自动转语音**。
+
+> [!IMPORTANT]
+> 本插件当前仅针对 IndexTTS 2.0 开发和测试，不一定兼容 IndexTTS 2.5。不同版本的 Gradio `/gen_single` 接口参数并不相同，请确认运行的是 IndexTTS 2.0。
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python" alt="Python">

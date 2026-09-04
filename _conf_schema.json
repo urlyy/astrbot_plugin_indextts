@@ -24,21 +24,11 @@
     "hint": "超过此字符数的 LLM 回复不会自动生成语音。",
     "default": 500
   },
-  "infer_mode": {
-    "type": "string",
-    "description": "推理模式",
-    "hint": "该值会原样传给 IndexTTS 的 infer_mode 参数，请与所用 IndexTTS WebUI 中显示的模式名称保持一致。",
-    "default": "批次推理"
-  },
-  "max_text_tokens_per_sentence": {
+  "max_text_tokens_per_segment": {
     "type": "int",
-    "description": "单句最大文本 Token 数",
+    "description": "单段最大文本 Token 数",
+    "hint": "IndexTTS2 官方建议设置在 80～200 之间。",
     "default": 120
-  },
-  "sentences_bucket_max_size": {
-    "type": "int",
-    "description": "句子分桶最大数量",
-    "default": 4
   },
   "do_sample": {
     "type": "bool",
@@ -61,7 +51,7 @@
     "type": "float",
     "description": "Temperature",
     "hint": "数值越高，生成结果通常越随机。",
-    "default": 1.0
+    "default": 0.8
   },
   "length_penalty": {
     "type": "float",
@@ -81,6 +71,6 @@
   "max_mel_tokens": {
     "type": "int",
     "description": "最大 Mel Token 数",
-    "default": 600
+    "default": 1500
   }
 }
