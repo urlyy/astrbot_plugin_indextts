@@ -1,5 +1,5 @@
 name: astrbot_plugin_indextts
-author: Moonlit Sapling.
+author: urlyy
 description: 适配 IndexTTS 2.0 API 的文本转语音插件，支持音色克隆和自动将 LLM 回复转为语音；目前不一定兼容 IndexTTS 2.5
 version: 2.0.0
 repo_url: https://github.com/urlyy/astrbot_plugin_indextts

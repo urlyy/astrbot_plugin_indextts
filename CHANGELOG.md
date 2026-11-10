@@ -23,7 +23,7 @@
 ### 其他
 
 - `.gitignore` 恢复忽略 `.idea/`，仓库不再跟踪 IDE 配置。
-- 版本号统一为 2.0.0，`repo_url` 指向 `https://github.com/urlyy/astrbot_plugin_indextts`。
+- 版本号统一为 2.0.0，`repo_url` 指向 `https://github.com/urlyy/astrbot_plugin_indextts`，作者改为 `urlyy`。
 
 ---
 

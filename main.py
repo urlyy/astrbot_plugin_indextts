@@ -15,7 +15,7 @@ from gradio_client import Client, handle_file
 
 @register(
     "astrbot_plugin_indextts",
-    "Moonlit Sapling.",
+    "urlyy",
     "适配 IndexTTS 2.0 的文本转语音插件，支持音色克隆（不兼容 IndexTTS 2.5）",
     "2.0.0"
 )
