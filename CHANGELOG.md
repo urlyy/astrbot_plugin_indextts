@@ -1,5 +1,11 @@
 # 更新日志
 
+## 2.0.1 — 2026-11-11
+
+- 新增 `glossary_enabled` 与 `glossary_terms`：术语表在 AstrBot 插件配置中管理，默认让 `ASOUL`、`A-SOUL` 读作「诶叟」。
+- 手动 `/tts` 与自动语音通过已有 `/on_add_glossary_term` 和 `/on_glossary_checkbox_change` 同步读音，再调用原有 24 参数 `/gen_single`，无需修改 IndexTTS 服务。
+- 记录本插件已同步的词条；删除或关闭后，下次合成将旧词条恢复为原词。`/tts_params` 显示插件术语数量。
+
 ## 2.0.0 — 2026-09-05
 
 ### 新增

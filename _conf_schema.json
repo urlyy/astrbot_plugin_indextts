@@ -6,6 +6,18 @@
     "obvious_hint": true,
     "default": "http://host.docker.internal:7860/"
   },
+  "glossary_enabled": {
+    "type": "bool",
+    "description": "启用插件术语读音表",
+    "hint": "手动 /tts 和自动语音生成前，通过 IndexTTS WebUI 现有 API 同步插件管理的读音。",
+    "default": true
+  },
+  "glossary_terms": {
+    "type": "list",
+    "description": "术语读音表",
+    "hint": "每项填写 原词=读法，例如 ASOUL=诶叟。忽略大小写、长词优先；同名词条以最后一项为准。删除或关闭后，下次生成会恢复本插件旧词条的原读法。",
+    "default": ["ASOUL=诶叟", "A-SOUL=诶叟"]
+  },
   "default_reference_audio": {
     "type": "string",
     "description": "默认参考音频路径",

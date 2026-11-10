@@ -1,4 +1,5 @@
 import os
+import json
 import asyncio
 import uuid
 import shutil
@@ -17,7 +18,7 @@ from gradio_client import Client, handle_file
     "astrbot_plugin_indextts",
     "urlyy",
     "适配 IndexTTS 2.0 的文本转语音插件，支持音色克隆（不兼容 IndexTTS 2.5）",
-    "2.0.0"
+    "2.0.1"
 )
 class IndexTTSPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -33,6 +34,7 @@ class IndexTTSPlugin(Star):
 
         # 配置由 AstrBot 根据 _conf_schema.json 创建并从 Desktop/WebUI 注入。
         self.config = config
+        self._tts_lock = asyncio.Lock()
 
         # Gradio 客户端
         self.client = None
@@ -154,6 +156,63 @@ class IndexTTSPlugin(Star):
 
     # ─── TTS 核心 ───────────────────────────────────────────
 
+    def _get_glossary(self) -> dict[str, str]:
+        """从插件配置读取需要同步给 IndexTTS 的术语表。"""
+        if not self.config.get("glossary_enabled", True):
+            return {}
+        entries = self.config.get(
+            "glossary_terms", ["ASOUL=诶叟", "A-SOUL=诶叟"]
+        )
+        if not isinstance(entries, list):
+            logger.warning("插件术语表 glossary_terms 必须是列表，已跳过")
+            return {}
+        glossary = {}
+        for entry in entries:
+            if not isinstance(entry, str):
+                logger.warning("已跳过无效术语项，请使用 原词=读法 格式")
+                continue
+            term, separator, reading = entry.partition("=")
+            term, reading = term.strip(), reading.strip()
+            if not separator or not term or not reading:
+                logger.warning("已跳过无效术语项，请使用 原词=读法 格式")
+                continue
+            glossary[term.casefold()] = (term, reading)
+        return dict(glossary.values())
+
+    def _sync_glossary(self, client, glossary: dict[str, str]):
+        """复用 WebUI 的现有接口；只记录本插件同步过的词条。"""
+        state_path = self.data_dir / "glossary_sync.json"
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            if not isinstance(state, dict):
+                state = {}
+        except (OSError, ValueError):
+            state = {}
+        url = self.config.get("index_tts_url", "http://127.0.0.1:7860/").rstrip("/")
+        previous = state.get(url, {})
+        if not isinstance(previous, dict):
+            previous = {}
+        desired = {term.casefold(): reading for term, reading in glossary.items()}
+        # WebUI 没有删除接口；被移除的词条恢复为原词，抵消旧读法。
+        updates = {
+            term: desired.get(term.casefold(), term)
+            for term in previous if isinstance(term, str)
+        }
+        updates.update(glossary)
+        for term, reading in updates.items():
+            result = client.predict(term, reading, reading, api_name="/on_add_glossary_term")
+            value = result.get("value") if isinstance(result, dict) else result
+            if not isinstance(value, str) or term not in value or reading not in value:
+                raise RuntimeError(f"IndexTTS 同步术语失败: {term}")
+        if glossary:
+            client.predict(True, api_name="/on_glossary_checkbox_change")
+        if updates:
+            state[url] = {
+                term: desired[term.casefold()]
+                for term in updates if term.casefold() in desired
+            }
+            state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
     async def _generate_tts(self, text: str, reference_audio: str) -> str:
         """调用 IndexTTS 生成语音，返回输出文件路径"""
         if not text or not text.strip():
@@ -173,12 +232,12 @@ class IndexTTSPlugin(Star):
         output_file = str(self.output_dir / f"tts_{uuid.uuid4().hex[:8]}.wav")
 
         cfg = self.config
+        glossary = self._get_glossary()
 
         # IndexTTS2 的 Gradio API 共有 24 个输入；使用位置参数可避免
         # Gradio 将 *args 暴露为 param_16～param_23 所带来的脆弱耦合。
         reference_file = handle_file(reference_audio)
-        result = await asyncio.to_thread(
-            client.predict,
+        arguments = (
             "与音色参考音频相同",
             reference_file,
             text,
@@ -196,8 +255,14 @@ class IndexTTSPlugin(Star):
             cfg.get("num_beams", 3),
             cfg.get("repetition_penalty", 10.0),
             cfg.get("max_mel_tokens", 1500),
-            api_name="/gen_single",
         )
+        def generate():
+            self._sync_glossary(client, glossary)
+            return client.predict(*arguments, api_name="/gen_single")
+
+        # 同步和合成串行，防止本插件的并发请求互相覆盖服务端读法。
+        async with self._tts_lock:
+            result = await asyncio.to_thread(generate)
 
         # 处理返回结果（可能是 dict 或 str 路径）
         temp_file = None
@@ -342,6 +407,7 @@ class IndexTTSPlugin(Star):
             f"  服务地址: {self.config.get('index_tts_url', 'http://127.0.0.1:7860/')}",
             f"  服务状态: {'✅ 已连接' if self.client else '❌ 未连接'}",
             f"  自动 TTS: {'✅ 已开启' if self.config.get('auto_tts_enabled', True) else '❌ 已关闭'}",
+            f"  插件术语表: {str(len(self._get_glossary())) + ' 条' if self.config.get('glossary_enabled', True) else '(已关闭)'}",
             f"  个人音色: {'✅ 已设置' if has_user_voice else '❌ 未设置（使用默认）'}",
             f"  参考音频: {ref or '(无)'}",
             f"  单段最大 Token: {self.config.get('max_text_tokens_per_segment', 120)}",

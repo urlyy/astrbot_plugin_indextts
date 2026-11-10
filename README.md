@@ -55,8 +55,25 @@ cp -r astrbot_plugin_indextts /path/to/AstrBot/data/plugins/
 |---|---|
 | `default_reference_audio` | 默认音色克隆参考音频路径；可填写绝对路径或插件根目录下的相对路径，留空时使用内置 `data/voice.wav` |
 | `index_tts_url` | IndexTTS Gradio 服务地址 |
+| `glossary_enabled` | 是否在合成前同步插件术语读音，默认开启 |
+| `glossary_terms` | 插件管理的术语读音列表，每项填写 `原词=读法`，默认包含 `ASOUL=诶叟` 和 `A-SOUL=诶叟` |
 
 > **关于地址配置**：如果 AstrBot 在 Docker 中运行而 IndexTTS 在宿主机上，使用 `http://host.docker.internal:7860/`；如果两者在同一网络环境中，改为 `http://127.0.0.1:7860/`。
+
+### 在插件配置中管理术语读音
+
+在 AstrBot 的 **插件管理 → IndexTTS 语音合成 → 配置 → 术语读音表** 中添加、修改或删除词条。每项填写 `原词=读法`，例如：
+
+```text
+ASOUL=诶叟
+A-SOUL=诶叟
+```
+
+术语表由 AstrBot 插件配置管理。手动 `/tts` 与 LLM 回复自动语音每次先通过现有 `/on_add_glossary_term` API 同步中英文读法，并通过 `/on_glossary_checkbox_change` 启用读音，然后将原文提交给原有 `/gen_single`。匹配忽略大小写，长词优先；同名词条以最后一项为准。聊天中显示的原文保持不变。
+
+保存插件配置后，新词条在下一次合成前同步。清空列表或关闭 `glossary_enabled` 后，下次生成会把本插件之前同步的词条恢复为原词，不关闭服务的全局术语开关。
+
+无需修改或重启 IndexTTS。WebUI 现有 API 会按自身逻辑保存同步后的词条，插件中的配置是词条来源；插件不直接读写 IndexTTS 目录。同步记录保存在插件 `data/glossary_sync.json`，按服务地址区分。WebUI 与插件使用同一个服务词表，修改已由插件管理的词条会在下次插件合成时被配置覆盖。
 
 ## 使用流程
 
@@ -66,7 +83,7 @@ cp -r astrbot_plugin_indextts /path/to/AstrBot/data/plugins/
 
 ## 技术要点
 
-- 通过 `gradio_client` 调用 IndexTTS 的 `/gen_single` API
+- 通过 `gradio_client` 调用 IndexTTS 已有的术语管理 API 和 `/gen_single` API
 - 使用 `asyncio.to_thread()` 包装同步调用，避免阻塞 AstrBot 事件循环
 - 支持自动重连：IndexTTS 服务断开后，下次调用自动尝试重连
 - 音频以 WAV 格式通过 `Comp.Record` 组件发送，兼容 QQ / NapCat
